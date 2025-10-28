@@ -11,7 +11,11 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # Default Cupertino icons
   cupertino_icons: ^1.0.8
+
+  # Chart library for dashboard pie chart
+  fl_chart: ^0.68.0
 
 dev_dependencies:
   flutter_test:

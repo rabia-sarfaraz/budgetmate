@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'welcome_screen.dart'; // ✅ import your Welcome Screen
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -75,7 +76,13 @@ class DashboardScreen extends StatelessWidget {
                 child: Center(
                   child: ElevatedButton(
                     onPressed: () {
-                      // Later navigate to next screen
+                      // ✅ Navigate to Welcome Screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const WelcomeScreen(),
+                        ),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF3A73DE),
