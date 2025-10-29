@@ -1,17 +1,59 @@
 import 'package:flutter/material.dart';
 import 'globals.dart';
+import 'all_expense_screen.dart';
 
 class AddIncomeScreen extends StatefulWidget {
-  const AddIncomeScreen({super.key});
+  final String? source;
+  final String? amount;
+  final String? date;
+  final int? index; // Optional index for editing
+
+  const AddIncomeScreen({
+    this.source,
+    this.amount,
+    this.date,
+    this.index,
+    super.key,
+  });
 
   @override
   State<AddIncomeScreen> createState() => _AddIncomeScreenState();
 }
 
 class _AddIncomeScreenState extends State<AddIncomeScreen> {
-  final TextEditingController _sourceController = TextEditingController();
-  final TextEditingController _amountController = TextEditingController();
-  final TextEditingController _dateController = TextEditingController();
+  late TextEditingController _sourceController;
+  late TextEditingController _amountController;
+  late TextEditingController _dateController;
+
+  @override
+  void initState() {
+    super.initState();
+    _sourceController = TextEditingController(text: widget.source ?? "");
+    _amountController = TextEditingController(text: widget.amount ?? "");
+    _dateController = TextEditingController(text: widget.date ?? "");
+  }
+
+  void _saveIncome() {
+    int enteredAmount = int.tryParse(_amountController.text) ?? 0;
+
+    final newIncome = {
+      "source": _sourceController.text,
+      "amount": enteredAmount,
+      "date": _dateController.text,
+    };
+
+    if (widget.index != null) {
+      // Update existing income
+      incomesNotifier.value = [
+        ...incomesNotifier.value..[widget.index!] = newIncome,
+      ];
+    } else {
+      // Add new income
+      incomesNotifier.value = [...incomesNotifier.value, newIncome];
+    }
+
+    Navigator.pop(context); // Go back to previous screen
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,11 +62,27 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF0097A7),
         automaticallyImplyLeading: true,
-        title: const Text(
-          "Add Income",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: Text(
+          widget.source == null ? "Add Income" : "Edit Income",
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AllExpenseScreen(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
@@ -44,21 +102,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
               height: 82,
               width: 248,
               child: ElevatedButton(
-                onPressed: () {
-                  int enteredAmount = int.tryParse(_amountController.text) ?? 0;
-
-                  // ✅ Add income to notifier
-                  incomesNotifier.value = [
-                    ...incomesNotifier.value,
-                    {
-                      "source": _sourceController.text,
-                      "amount": enteredAmount,
-                      "date": _dateController.text,
-                    },
-                  ];
-
-                  Navigator.pop(context); // Return to WelcomeScreen
-                },
+                onPressed: _saveIncome,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF4D88E5),
                   shape: RoundedRectangleBorder(

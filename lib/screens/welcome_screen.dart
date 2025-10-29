@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'add_expense_screen.dart';
 import 'add_income_screen.dart';
+import 'report_screen.dart'; // ✅ Added this import
 import 'globals.dart';
 
 class WelcomeScreen extends StatelessWidget {
@@ -183,7 +184,13 @@ class WelcomeScreen extends StatelessWidget {
                     Colors.green,
                     const AddIncomeScreen(),
                   ),
-                  _buildBottomButton(context, "View Report", Colors.blue, null),
+                  // ✅ Updated this button to navigate to ReportScreen
+                  _buildBottomButton(
+                    context,
+                    "View Report",
+                    Colors.blue,
+                    const ReportScreen(),
+                  ),
                 ],
               ),
             ],

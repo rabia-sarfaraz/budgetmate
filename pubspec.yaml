@@ -14,8 +14,11 @@ dependencies:
   # Default Cupertino icons
   cupertino_icons: ^1.0.8
 
-  # Chart library for dashboard pie chart
+  # Chart library for pie and bar graphs
   fl_chart: ^0.68.0
+
+  # Image picker for profile photo
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:
