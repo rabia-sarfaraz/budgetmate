@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'globals.dart'; // ✅ Make sure this file exists in lib/screens/
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -15,21 +16,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final TextEditingController _budgetLimitController = TextEditingController();
   final TextEditingController _incomeGoalController = TextEditingController();
 
-  File? _profileImage; // ✅ For storing selected image
+  File? _profileImage;
 
-  // ✅ Function to pick image from gallery
+  // ✅ Pick image from gallery
   Future<void> _pickImage() async {
-    final pickedImage = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-    );
-    if (pickedImage != null) {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (picked != null) {
       setState(() {
-        _profileImage = File(pickedImage.path);
+        _profileImage = File(picked.path);
       });
+      _saveProfile(); // update after selecting image
     }
   }
 
-  // ✅ Function to clear all fields
+  // ✅ Save profile data globally
+  void _saveProfile() {
+    String name = _nameController.text.trim();
+    String email = _emailController.text.trim();
+    int? budget = int.tryParse(_budgetLimitController.text.trim());
+    int? goal = int.tryParse(_incomeGoalController.text.trim());
+
+    final profile = {
+      "name": name,
+      "email": email,
+      "budget": budget ?? 0,
+      "goal": goal ?? 0,
+      "image": _profileImage?.path,
+    };
+
+    updateProfile(profile); // ✅ save globally
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("✅ Profile updated successfully!"),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  // ✅ Clear all data
   void _clearData() {
     setState(() {
       _profileImage = null;
@@ -38,6 +63,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _budgetLimitController.clear();
       _incomeGoalController.clear();
     });
+    updateProfile({});
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Load existing profile if available
+    if (profileDataNotifier.value.isNotEmpty) {
+      final data = profileDataNotifier.value.first;
+      _nameController.text = data["name"] ?? '';
+      _emailController.text = data["email"] ?? '';
+      _budgetLimitController.text = data["budget"]?.toString() ?? '';
+      _incomeGoalController.text = data["goal"]?.toString() ?? '';
+      if (data["image"] != null) {
+        _profileImage = File(data["image"]);
+      }
+    }
   }
 
   @override
@@ -53,142 +95,120 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            // ✅ Profile Image
-            Center(
-              child: CircleAvatar(
-                radius: 60,
-                backgroundColor: Colors.lightBlue[200],
-                backgroundImage: _profileImage != null
-                    ? FileImage(_profileImage!)
-                    : null,
-                child: _profileImage == null
-                    ? const Icon(
-                        Icons.person,
-                        size: 60,
-                        color: Color(0xFF004D60),
-                      )
-                    : null,
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // ✅ Upload Photo Button
-            SizedBox(
-              height: 60,
-              width: 200,
-              child: ElevatedButton(
-                onPressed: _pickImage,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4D88E5),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(35),
+      body: ValueListenableBuilder(
+        valueListenable: profileDataNotifier,
+        builder: (context, value, _) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+                Center(
+                  child: CircleAvatar(
+                    radius: 60,
+                    backgroundColor: Colors.lightBlue[200],
+                    backgroundImage: _profileImage != null
+                        ? FileImage(_profileImage!)
+                        : (value.isNotEmpty && value.first["image"] != null
+                              ? FileImage(File(value.first["image"]))
+                              : null),
+                    child:
+                        (_profileImage == null &&
+                            (value.isEmpty || value.first["image"] == null))
+                        ? const Icon(
+                            Icons.person,
+                            size: 60,
+                            color: Color(0xFF004D60),
+                          )
+                        : null,
                   ),
                 ),
-                child: const Text(
-                  "Upload Photo",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 30),
-
-            // ✅ Text Fields (4)
-            _buildTextField("Enter your name", _nameController),
-            const SizedBox(height: 10),
-            _buildTextField("Enter your email", _emailController),
-            const SizedBox(height: 10),
-            _buildTextField(
-              "Enter budget limit",
-              _budgetLimitController,
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 10),
-            _buildTextField(
-              "Enter income goal",
-              _incomeGoalController,
-              keyboardType: TextInputType.number,
-            ),
-
-            const SizedBox(height: 40),
-
-            // ✅ Update Budget Button
-            SizedBox(
-              height: 60,
-              width: 248,
-              child: ElevatedButton(
-                onPressed: () {
-                  String name = _nameController.text;
-                  String email = _emailController.text;
-                  int? budgetLimit = int.tryParse(
-                    _budgetLimitController.text.trim(),
-                  );
-                  int? incomeGoal = int.tryParse(
-                    _incomeGoalController.text.trim(),
-                  );
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        "✅ Budget updated!\nName: $name\nEmail: $email\nBudget: ${budgetLimit ?? 0}\nIncome Goal: ${incomeGoal ?? 0}",
+                const SizedBox(height: 20),
+                SizedBox(
+                  height: 60,
+                  width: 200,
+                  child: ElevatedButton(
+                    onPressed: _pickImage,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4D88E5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(35),
                       ),
-                      backgroundColor: Colors.green,
                     ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4D88E5),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(35),
+                    child: const Text(
+                      "Upload Photo",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ),
-                child: const Text(
-                  "Update Budget",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
+                const SizedBox(height: 30),
+                _buildTextField("Enter your name", _nameController),
+                const SizedBox(height: 10),
+                _buildTextField("Enter your email", _emailController),
+                const SizedBox(height: 10),
+                _buildTextField(
+                  "Enter budget limit",
+                  _budgetLimitController,
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 10),
+                _buildTextField(
+                  "Enter income goal",
+                  _incomeGoalController,
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 40),
+                SizedBox(
+                  height: 60,
+                  width: 248,
+                  child: ElevatedButton(
+                    onPressed: _saveProfile,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4D88E5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(35),
+                      ),
+                    ),
+                    child: const Text(
+                      "Update Budget",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  height: 60,
+                  width: 248,
+                  child: ElevatedButton(
+                    onPressed: _clearData,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(35),
+                      ),
+                    ),
+                    child: const Text(
+                      "Clear Data",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-
-            const SizedBox(height: 20),
-
-            // ✅ Clear Data Button
-            SizedBox(
-              height: 60,
-              width: 248,
-              child: ElevatedButton(
-                onPressed: _clearData,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(35),
-                  ),
-                ),
-                child: const Text(
-                  "Clear Data",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
